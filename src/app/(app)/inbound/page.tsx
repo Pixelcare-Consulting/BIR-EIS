@@ -4,12 +4,15 @@ import { PageHeaderCard } from "@/app/(app)/_components/page-header-card";
 import { DocumentFiltersCard } from "@/features/documents/components/document-filters-card";
 import { DocumentListTable } from "@/features/documents/components/document-list-table";
 import { SyncEisResponsesButton } from "@/features/documents/components/sync-eis-responses-button";
-import { listDocuments } from "@/features/documents/lib/document-queries";
 import {
-  DOCUMENT_TYPES,
-  INBOUND_RESPONSE_STATUSES,
-  INBOUND_RESPONSE_STATUS_LABELS,
-} from "@/features/documents/schemas/document.schema";
+  BUSINESS_STATUS_LABELS,
+  OUTBOUND_BUSINESS_FILTER_STATUSES,
+} from "@/features/documents/lib/document-business-status";
+import {
+  isOutboundBusinessFilterStatus,
+  listDocuments,
+} from "@/features/documents/lib/document-queries";
+import { DOCUMENT_TYPES } from "@/features/documents/schemas/document.schema";
 import {
   hasPermission,
   requirePermission,
@@ -33,11 +36,9 @@ export default async function InboundPage({
   const params = await searchParams;
   const pageRaw = Number(params.page ?? "1");
   const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1;
-  const status =
-    params.status &&
-    (INBOUND_RESPONSE_STATUSES as readonly string[]).includes(params.status)
-      ? params.status
-      : undefined;
+  const status = isOutboundBusinessFilterStatus(params.status)
+    ? params.status
+    : undefined;
   const documentType =
     params.documentType &&
     (DOCUMENT_TYPES as readonly string[]).includes(params.documentType)
@@ -81,9 +82,11 @@ export default async function InboundPage({
         q={q}
         documentType={documentType}
         status={status}
-        statusOptions={INBOUND_RESPONSE_STATUSES.map((value) => ({
+        statusOptions={OUTBOUND_BUSINESS_FILTER_STATUSES.filter(
+          (value) => value !== "draft",
+        ).map((value) => ({
           value,
-          label: INBOUND_RESPONSE_STATUS_LABELS[value],
+          label: BUSINESS_STATUS_LABELS[value],
         }))}
       />
 
@@ -94,6 +97,7 @@ export default async function InboundPage({
         page={safePage}
         totalPages={totalPages}
         filters={filters}
+        canManage={canManage}
         emptyTitle={
           status || q || documentType
             ? "No responses match these filters"

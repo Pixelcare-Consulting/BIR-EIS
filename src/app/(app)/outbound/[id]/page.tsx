@@ -4,12 +4,16 @@ import { ArrowLeft, FileOutput } from "lucide-react";
 
 import { PageHeaderCard } from "@/app/(app)/_components/page-header-card";
 import { DocumentContentCard } from "@/features/documents/components/document-content-card";
+import { DocumentDetailActions } from "@/features/documents/components/document-detail-actions";
+import { DocumentLifecycleTimeline } from "@/features/documents/components/document-lifecycle-timeline";
 import {
-  DocumentStatusBadge,
+  BusinessStatusBadge,
+  CancellationStatusBadge,
   EisAckStatusBadge,
 } from "@/features/documents/components/document-status-badge";
 import { QueueOutboundButton } from "@/features/documents/components/outbound-document-actions";
 import { OutboundDocumentForm } from "@/features/documents/components/outbound-document-form";
+import { ViewEisJsonButton } from "@/features/documents/components/view-eis-json-button";
 import {
   formatDocumentType,
   formatIssueDate,
@@ -17,6 +21,9 @@ import {
   toDateInputValue,
 } from "@/features/documents/lib/document-format";
 import { getDocumentById } from "@/features/documents/lib/document-queries";
+import {
+  CANCELLATION_REASON_LABELS,
+} from "@/features/documents/schemas/document.schema";
 import { Button } from "@/components/ui/button";
 import {
   hasPermission,
@@ -33,6 +40,12 @@ function formatDateTime(date: Date | null | undefined): string {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
+}
+
+function formatCancellationReason(reason: string | null | undefined): string {
+  if (!reason) return "—";
+  const labels = CANCELLATION_REASON_LABELS as Record<string, string>;
+  return labels[reason] ?? reason.replace(/_/g, " ");
 }
 
 export default async function OutboundDocumentDetailPage({
@@ -54,11 +67,25 @@ export default async function OutboundDocumentDetailPage({
   );
   const isDraft = document.status === "draft";
   const canQueue = canManage && isDraft;
+  const showCancellationSection = Boolean(document.cancellationStatus);
   const showResponseInboxLink =
     document.status === "queued" ||
     document.status === "submitted" ||
     document.status === "accepted" ||
     document.status === "rejected";
+
+  const cancellationDialogDocument = {
+    id: document.id,
+    documentNumber: document.documentNumber,
+    documentType: document.documentType,
+    counterpartName: document.counterpartName,
+    issueDate: document.issueDate,
+    currency: document.currency,
+    totalAmount: document.totalAmount.toString(),
+    status: document.status,
+    eisReferenceId: document.eisReferenceId,
+    cancellationStatus: document.cancellationStatus,
+  };
 
   return (
     <div className="space-y-6 lg:space-y-7">
@@ -67,26 +94,35 @@ export default async function OutboundDocumentDetailPage({
         title={document.documentNumber}
         description={`${formatDocumentType(document.documentType)} · ${document.counterpartName}`}
         aside={
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {showResponseInboxLink ? (
-              <Button asChild variant="onNavy">
-                <Link href={`/inbound/${document.id}`}>View EIS response</Link>
-              </Button>
-            ) : null}
-            <Button asChild variant="onNavyOutline">
-              <Link href="/outbound">
-                <ArrowLeft className="size-4" />
-                Back to list
-              </Link>
-            </Button>
-            {canQueue ? (
-              <QueueOutboundButton
-                documentId={document.id}
-                documentType={document.documentType}
-                variant="onNavy"
-              />
-            ) : null}
-          </div>
+          <DocumentDetailActions
+            detailHref={`/outbound/${document.id}`}
+            detailLabel="View outbound"
+            canManage={canManage}
+            document={cancellationDialogDocument}
+            leading={
+              <>
+                <Button asChild variant="onNavyOutline">
+                  <Link href="/outbound">
+                    <ArrowLeft className="size-4" />
+                    Back to list
+                  </Link>
+                </Button>
+                {showResponseInboxLink ? (
+                  <Button asChild variant="onNavy">
+                    <Link href={`/inbound/${document.id}`}>View EIS response</Link>
+                  </Button>
+                ) : null}
+                {canQueue ? (
+                  <QueueOutboundButton
+                    documentId={document.id}
+                    documentType={document.documentType}
+                    variant="onNavy"
+                  />
+                ) : null}
+              </>
+            }
+            menuTriggerVariant="onNavy"
+          />
         }
       />
 
@@ -96,9 +132,12 @@ export default async function OutboundDocumentDetailPage({
             <div className="flex items-center justify-between gap-3">
               <dt className="text-muted-foreground">Status</dt>
               <dd>
-                <DocumentStatusBadge
-                  status={document.status}
+                <BusinessStatusBadge
                   direction="outbound"
+                  document={{
+                    status: document.status,
+                    cancellationStatus: document.cancellationStatus,
+                  }}
                 />
               </dd>
             </div>
@@ -168,6 +207,9 @@ export default async function OutboundDocumentDetailPage({
             <DocumentContentCard
               title="Edit draft"
               description="Update details before submitting to BIR EIS."
+              headerAction={
+                <ViewEisJsonButton payload={document.eisJsonPayload} />
+              }
             >
               <OutboundDocumentForm
                 mode="edit"
@@ -187,7 +229,12 @@ export default async function OutboundDocumentDetailPage({
               />
             </DocumentContentCard>
           ) : (
-            <DocumentContentCard title="Document details">
+            <DocumentContentCard
+              title="Document details"
+              headerAction={
+                <ViewEisJsonButton payload={document.eisJsonPayload} />
+              }
+            >
               <dl className="grid gap-3 text-sm sm:grid-cols-2">
                 <div>
                   <dt className="text-muted-foreground">Type</dt>
@@ -204,6 +251,92 @@ export default async function OutboundDocumentDetailPage({
               </dl>
             </DocumentContentCard>
           )}
+
+          <DocumentLifecycleTimeline
+            tenantId={session.user.tenantId}
+            document={{
+              id: document.id,
+              status: document.status,
+              documentNumber: document.documentNumber,
+              issueDate: document.issueDate?.toISOString() ?? null,
+              createdAt: document.createdAt.toISOString(),
+              submittedAt: document.submittedAt?.toISOString() ?? null,
+              eisAckAt: document.eisAckAt?.toISOString() ?? null,
+              eisAckStatus: document.eisAckStatus,
+              eisReferenceId: document.eisReferenceId,
+              eisAckMessage: document.eisAckMessage,
+              cancellationStatus: document.cancellationStatus,
+              cancellationReason: document.cancellationReason,
+              cancellationRequestedAt: document.cancellationRequestedAt?.toISOString() ?? null,
+              cancellationReferenceId: document.cancellationReferenceId,
+              cancellationAckAt: document.cancellationAckAt?.toISOString() ?? null,
+              cancellationAckMessage: document.cancellationAckMessage,
+              cancelledAt: document.cancelledAt?.toISOString() ?? null,
+              cancellationRequestedBy: document.cancellationRequestedBy,
+            }}
+          />
+
+          {showCancellationSection ? (
+            <DocumentContentCard
+              title="Cancellation details"
+              description="Sandbox EIS / certification simulation — original EIS transmission fields stay unchanged."
+            >
+              <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-muted-foreground">Cancellation status</dt>
+                  <dd className="mt-1">
+                    <CancellationStatusBadge
+                      status={document.cancellationStatus}
+                    />
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Reason</dt>
+                  <dd>
+                    {formatCancellationReason(document.cancellationReason)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Requested by</dt>
+                  <dd>
+                    {document.cancellationRequestedBy?.name ||
+                      document.cancellationRequestedBy?.email ||
+                      "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Requested at</dt>
+                  <dd>
+                    {formatDateTime(document.cancellationRequestedAt)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Cancellation reference</dt>
+                  <dd className="font-mono text-xs break-all">
+                    {document.cancellationReferenceId || "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Cancelled at</dt>
+                  <dd>{formatDateTime(document.cancelledAt)}</dd>
+                </div>
+                {document.cancellationRemarks ? (
+                  <div className="sm:col-span-2">
+                    <dt className="text-muted-foreground">Remarks</dt>
+                    <dd>{document.cancellationRemarks}</dd>
+                  </div>
+                ) : null}
+                {document.cancellationAckMessage ? (
+                  <div className="sm:col-span-2 border-t border-border/50 pt-3">
+                    <dt className="text-muted-foreground">
+                      EIS sandbox response
+                    </dt>
+                    <dd className="mt-1">{document.cancellationAckMessage}</dd>
+                  </div>
+                ) : null}
+              </dl>
+            </DocumentContentCard>
+          ) : null}
         </div>
       </div>
     </div>

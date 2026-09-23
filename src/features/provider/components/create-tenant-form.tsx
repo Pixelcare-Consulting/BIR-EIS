@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, Loader2, RefreshCw } from "lucide-react";
+import { Check, Copy, RefreshCw } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -9,6 +9,7 @@ import {
   type CreateTenantActionState,
 } from "@/features/provider/actions/create-tenant.action";
 import { settingsFieldClassName } from "@/features/settings/lib/field-styles";
+import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -243,16 +244,14 @@ export function CreateTenantForm() {
       ) : null}
 
       <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-4">
-        <Button type="submit" disabled={pending || !password}>
-          {pending ? (
-            <>
-              <Loader2 className="size-4 animate-spin" />
-              Creating…
-            </>
-          ) : (
-            "Create workspace"
-          )}
-        </Button>
+        <ActionButton
+          type="submit"
+          disabled={!password}
+          loading={pending}
+          loadingText="Creating…"
+        >
+          Create workspace
+        </ActionButton>
         <Button asChild variant="ghost" disabled={pending}>
           <Link href="/provider/tenants">Cancel</Link>
         </Button>

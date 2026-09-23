@@ -3,6 +3,8 @@ import { existsSync } from "node:fs";
 import { config } from "dotenv";
 import { defineConfig, env } from "prisma/config";
 
+import { normalizeDatabaseUrl } from "./src/lib/database/normalize-database-url";
+
 // Local dev uses .env.local; Vercel/CI inject env vars into the process.
 if (existsSync(".env.local")) {
   config({ path: ".env.local" });
@@ -11,7 +13,7 @@ if (existsSync(".env.local")) {
 function resolveDatasourceUrl(): string {
   const fromEnv = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
   if (fromEnv) {
-    return fromEnv;
+    return normalizeDatabaseUrl(fromEnv);
   }
 
   // `prisma generate` does not open a DB connection. Allow install/build without .env.local.

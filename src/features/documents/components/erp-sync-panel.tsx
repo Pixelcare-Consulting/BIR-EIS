@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Loader2, PlugZap, RefreshCw } from "lucide-react";
+import { PlugZap, RefreshCw } from "lucide-react";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -14,6 +14,7 @@ import {
   ERP_PROVIDER_LABELS,
   ERP_PROVIDERS,
 } from "@/features/settings/schemas/erp-connection.schema";
+import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -111,8 +112,8 @@ export function ErpSyncPanel({
           No ERP connections yet
         </p>
         <p className="mx-auto mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">
-          Add an enabled connection under Settings → Integrations to pull sample
-          invoices into Outbound drafts.
+          Add an enabled connection under Settings → Integrations to sync sandbox
+          sample invoices into Outbound drafts.
         </p>
         <Button asChild variant="outline" className="mt-5 h-10 cursor-pointer">
           <Link href="/settings/integrations/erp">Open ERP connections</Link>
@@ -247,23 +248,16 @@ export function ErpSyncPanel({
               <Link href="/settings/integrations/erp">Manage connections</Link>
             </Button>
           </div>
-          <Button
+          <ActionButton
             type="submit"
-            disabled={pending || !connectionId}
+            disabled={!connectionId}
+            loading={pending}
+            loadingText="Syncing…"
             className="h-10 w-full cursor-pointer sm:ml-auto sm:w-auto"
           >
-            {pending ? (
-              <>
-                <Loader2 className="size-4 animate-spin" />
-                Syncing…
-              </>
-            ) : (
-              <>
-                <RefreshCw className="size-4" />
-                Sync now
-              </>
-            )}
-          </Button>
+            <RefreshCw className="size-4" />
+            Sync now
+          </ActionButton>
         </div>
       </div>
     </form>

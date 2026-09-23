@@ -18,6 +18,7 @@ import {
   type AssignableTenantRole,
 } from "@/features/users/schemas/users.schema";
 import { settingsSelectTriggerClassName } from "@/features/settings/lib/field-styles";
+import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -208,22 +209,16 @@ function DeactivateUserButton({
         >
           Cancel
         </Button>
-        <Button
+        <ActionButton
           type="submit"
           variant="outline"
           size="sm"
-          disabled={pending}
+          loading={pending}
+          loadingText="Deactivating…"
           className="h-8 text-destructive hover:bg-destructive/5 hover:text-destructive"
         >
-          {pending ? (
-            <>
-              <Loader2 className="size-3.5 animate-spin" />
-              Deactivating…
-            </>
-          ) : (
-            "Confirm"
-          )}
-        </Button>
+          Confirm
+        </ActionButton>
       </div>
       {state.error ? (
         <p className="text-xs text-destructive" role="alert">

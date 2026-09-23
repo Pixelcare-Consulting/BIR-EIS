@@ -33,6 +33,17 @@ Create that role and database in your local Postgres before migrating, or point 
 
 Without a connection pooler, `DATABASE_URL` and `DIRECT_URL` can be identical.
 
+## SSL / `sslmode` (Neon and node-pg)
+
+Node `pg` currently treats `sslmode=prefer`, `require`, and `verify-ca` as **`verify-full`** and prints a security warning. Prefer:
+
+- `sslmode=verify-full` — keeps today’s secure behavior (recommended for Neon / cloud)
+- or `uselibpqcompat=true&sslmode=require` — if you want future libpq semantics now
+
+The app and Prisma CLI also normalize `prefer|require|verify-ca` → `verify-full` at runtime so older `.env.local` URLs stay quiet. Still update your env strings when you can.
+
+Local Postgres without TLS can omit `sslmode`.
+
 ## Stuck migrate locks
 
 If `migrate dev` hits **P1002** advisory lock timeout after a crashed run, clear the lock in Postgres (or restart the database) and retry:

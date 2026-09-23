@@ -234,8 +234,8 @@ export function NewDocumentChooser({
                 <DialogHeader className="space-y-1.5">
                   <DialogTitle>ERP Sync</DialogTitle>
                   <DialogDescription>
-                    Pull sample invoices into Outbound drafts using a saved
-                    connection.
+                    Sync fresh sandbox sample invoices into Outbound drafts using
+                    a saved connection.
                   </DialogDescription>
                 </DialogHeader>
               </div>

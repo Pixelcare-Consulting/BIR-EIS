@@ -4,11 +4,16 @@ import { PageHeaderCard } from "@/app/(app)/_components/page-header-card";
 import { DocumentFiltersCard } from "@/features/documents/components/document-filters-card";
 import { DocumentListTable } from "@/features/documents/components/document-list-table";
 import { NewDocumentChooser } from "@/features/documents/components/new-document-chooser";
-import { listDocuments } from "@/features/documents/lib/document-queries";
+import {
+  isOutboundBusinessFilterStatus,
+  listDocuments,
+} from "@/features/documents/lib/document-queries";
+import {
+  businessStatusLabel,
+  OUTBOUND_LIST_FILTER_STATUSES,
+} from "@/features/documents/lib/document-business-status";
 import {
   DOCUMENT_TYPES,
-  OUTBOUND_STATUSES,
-  OUTBOUND_STATUS_LABELS,
 } from "@/features/documents/schemas/document.schema";
 import {
   hasPermission,
@@ -34,11 +39,9 @@ export default async function OutboundPage({
   const params = await searchParams;
   const pageRaw = Number(params.page ?? "1");
   const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1;
-  const status =
-    params.status &&
-    (OUTBOUND_STATUSES as readonly string[]).includes(params.status)
-      ? params.status
-      : undefined;
+  const status = isOutboundBusinessFilterStatus(params.status)
+    ? params.status
+    : undefined;
   const documentType =
     params.documentType &&
     (DOCUMENT_TYPES as readonly string[]).includes(params.documentType)
@@ -46,46 +49,57 @@ export default async function OutboundPage({
       : undefined;
   const q = params.q?.trim() || undefined;
 
-  const { total, documents, page: safePage, totalPages } = await listDocuments({
-    tenantId: session.user.tenantId,
-    direction: "outbound",
-    status,
-    documentType,
-    q,
-    page,
-  });
-
   const canManage = hasPermission(
     session.user.permissions,
     "documents.manage",
   );
 
-  const erpConnections = canManage
-    ? (
-        await prisma.erpConnection.findMany({
-          where: {
-            tenantId: session.user.tenantId,
-            deletedAt: null,
-            enabled: true,
-          },
-          orderBy: { name: "asc" },
-          select: {
-            id: true,
-            name: true,
-            provider: true,
-            lastSyncAt: true,
-          },
-        })
-      ).map((connection) => ({
-        id: connection.id,
-        name: connection.name,
-        provider: connection.provider,
-        lastSyncAt: connection.lastSyncAt
-          ? connection.lastSyncAt.toISOString()
-          : null,
-      }))
-    : [];
+  const [listResult, erpConnections] = await Promise.all([
+    listDocuments({
+      tenantId: session.user.tenantId,
+      direction: "outbound",
+      status,
+      documentType,
+      q,
+      page,
+    }),
+    canManage
+      ? prisma.erpConnection
+          .findMany({
+            where: {
+              tenantId: session.user.tenantId,
+              deletedAt: null,
+              enabled: true,
+            },
+            orderBy: { name: "asc" },
+            select: {
+              id: true,
+              name: true,
+              provider: true,
+              lastSyncAt: true,
+            },
+          })
+          .then((rows) =>
+            rows.map((connection) => ({
+              id: connection.id,
+              name: connection.name,
+              provider: connection.provider,
+              lastSyncAt: connection.lastSyncAt
+                ? connection.lastSyncAt.toISOString()
+                : null,
+            })),
+          )
+      : Promise.resolve(
+          [] as Array<{
+            id: string;
+            name: string;
+            provider: string;
+            lastSyncAt: string | null;
+          }>,
+        ),
+  ]);
 
+  const { total, documents, page: safePage, totalPages } = listResult;
   const filters = { status, q, documentType };
 
   return (
@@ -106,9 +120,9 @@ export default async function OutboundPage({
         q={q}
         documentType={documentType}
         status={status}
-        statusOptions={OUTBOUND_STATUSES.map((value) => ({
+        statusOptions={OUTBOUND_LIST_FILTER_STATUSES.map((value) => ({
           value,
-          label: OUTBOUND_STATUS_LABELS[value],
+          label: businessStatusLabel(value, { direction: "outbound" }),
         }))}
       />
 
@@ -119,6 +133,7 @@ export default async function OutboundPage({
         page={safePage}
         totalPages={totalPages}
         filters={filters}
+        canManage={canManage}
         emptyTitle={
           status || q || documentType
             ? "No documents match these filters"

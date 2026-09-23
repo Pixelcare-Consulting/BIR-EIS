@@ -1,11 +1,10 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { AppVersion } from "@/app/(auth)/_components/app-version";
-import { Button } from "@/components/ui/button";
+import { ActionButton } from "@/components/ui/action-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth/client";
@@ -38,19 +37,24 @@ export function LoginForm() {
     const email = String(formData.get("email") ?? "");
     const password = String(formData.get("password") ?? "");
 
-    const result = await authClient.signIn.email({
-      email,
-      password,
-    });
+    try {
+      const result = await authClient.signIn.email({
+        email,
+        password,
+      });
 
-    if (result.error) {
+      if (result.error) {
+        setIsBusy(false);
+        setError("Invalid email or password. Please try again.");
+        return;
+      }
+
+      router.push(callbackUrl);
+      router.refresh();
+    } catch {
       setIsBusy(false);
-      setError("Invalid email or password. Please try again.");
-      return;
+      setError("Something went wrong. Please try again.");
     }
-
-    router.push(callbackUrl);
-    router.refresh();
   }
 
   return (
@@ -93,20 +97,14 @@ export function LoginForm() {
         </div>
       ) : null}
 
-      <Button
+      <ActionButton
         type="submit"
         className="h-11 w-full rounded-lg text-sm font-semibold shadow-sm"
-        disabled={isBusy}
+        loading={isBusy}
+        loadingText="Signing in…"
       >
-        {isBusy ? (
-          <>
-            <Loader2 className="size-4 animate-spin" />
-            Signing in…
-          </>
-        ) : (
-          "Sign in"
-        )}
-      </Button>
+        Sign in
+      </ActionButton>
 
       <AppVersion className="w-full pt-1" />
     </form>

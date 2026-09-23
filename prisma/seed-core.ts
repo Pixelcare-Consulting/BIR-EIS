@@ -174,6 +174,7 @@ export async function seedCore(prisma: PrismaClient): Promise<CoreSeedResult> {
         direction: doc.direction,
         documentType: doc.documentType,
         status: doc.status,
+        source: "manual",
         documentNumber: doc.documentNumber,
         issueDate: new Date(doc.issueDate),
         currency: doc.currency,
@@ -191,6 +192,22 @@ export async function seedCore(prisma: PrismaClient): Promise<CoreSeedResult> {
         eisAckAt: doc.eisAckAt ? new Date(doc.eisAckAt) : null,
         submittedAt: doc.submittedAt ? new Date(doc.submittedAt) : null,
         notes: doc.notes ?? null,
+        cancellationStatus: doc.cancellationStatus ?? null,
+        cancellationReason: doc.cancellationReason ?? null,
+        cancellationRemarks: doc.cancellationRemarks ?? null,
+        cancellationRequestedAt: doc.cancellationRequestedAt
+          ? new Date(doc.cancellationRequestedAt)
+          : null,
+        cancellationRequestedById: doc.cancellationStatus
+          ? (adminUser?.id ?? null)
+          : null,
+        cancelledAt: doc.cancelledAt ? new Date(doc.cancelledAt) : null,
+        cancellationReferenceId: doc.cancellationReferenceId ?? null,
+        cancellationAckStatus: doc.cancellationAckStatus ?? null,
+        cancellationAckMessage: doc.cancellationAckMessage ?? null,
+        cancellationAckAt: doc.cancellationAckAt
+          ? new Date(doc.cancellationAckAt)
+          : null,
       },
     });
   }

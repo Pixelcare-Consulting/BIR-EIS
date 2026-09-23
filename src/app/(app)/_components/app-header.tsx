@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import {
   Bell,
   Building2,
@@ -9,6 +10,7 @@ import {
   CircleHelp,
   ClipboardList,
   FileWarning,
+  Loader2,
   LogOut,
   Search,
   Settings,
@@ -102,6 +104,7 @@ export function AppHeader({
   const router = useRouter();
   const pathname = usePathname();
   const { query, setQuery } = useAppSearch();
+  const [isBusy, setIsBusy] = useState(false);
   const initials = getInitials(userName, userEmail);
   const notificationCount = SAMPLE_NOTIFICATIONS.length;
   const pageContextLabel = resolvePageContextLabel(pathname);
@@ -110,9 +113,15 @@ export function AppHeader({
   const currentRelease = getCurrentRelease();
 
   async function handleSignOut() {
-    await authClient.signOut();
-    router.push("/login");
-    router.refresh();
+    if (isBusy) return;
+    setIsBusy(true);
+    try {
+      await authClient.signOut();
+      router.push("/login");
+      router.refresh();
+    } catch {
+      setIsBusy(false);
+    }
   }
 
   return (
@@ -260,26 +269,26 @@ export function AppHeader({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               {isPlatformOperator ? (
-                <DropdownMenuItem asChild>
+                <DropdownMenuItem asChild disabled={isBusy}>
                   <Link href="/provider">
                     <Building2 />
                     Provider console
                   </Link>
                 </DropdownMenuItem>
               ) : null}
-              <DropdownMenuItem asChild>
-                <Link href="/settings">
+              <DropdownMenuItem asChild disabled={isBusy}>
+                <Link href="/settings/profile">
                   <Settings />
                   Settings
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
+              <DropdownMenuItem asChild disabled={isBusy}>
                 <Link href="/#help">
                   <CircleHelp />
                   Help & Support
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
+              <DropdownMenuItem asChild disabled={isBusy}>
                 <Link href="/#requirements">
                   <ClipboardList />
                   Requirements
@@ -287,9 +296,16 @@ export function AppHeader({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => void handleSignOut()}>
-              <LogOut />
-              Log out
+            <DropdownMenuItem
+              disabled={isBusy}
+              onClick={() => void handleSignOut()}
+            >
+              {isBusy ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+              ) : (
+                <LogOut />
+              )}
+              {isBusy ? "Signing out…" : "Log out"}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <div className="px-2 py-1.5 text-xs text-muted-foreground">

@@ -68,6 +68,46 @@ export const EIS_ACK_STATUS_LABELS: Record<
   rejected: "Rejected",
 };
 
+export const CANCELLATION_STATUSES = [
+  "requested",
+  "pending",
+  "accepted",
+  "rejected",
+] as const;
+
+export const CANCELLATION_STATUS_LABELS: Record<
+  (typeof CANCELLATION_STATUSES)[number],
+  string
+> = {
+  requested: "Cancellation Requested",
+  pending: "Cancellation Pending",
+  accepted: "Cancelled",
+  rejected: "Cancellation Rejected",
+};
+
+export const CANCELLATION_REASONS = [
+  "customer_request",
+  "incorrect_customer_information",
+  "incorrect_amount",
+  "duplicate_invoice",
+  "incorrect_items_services",
+  "transaction_voided",
+  "other",
+] as const;
+
+export const CANCELLATION_REASON_LABELS: Record<
+  (typeof CANCELLATION_REASONS)[number],
+  string
+> = {
+  customer_request: "Customer Request",
+  incorrect_customer_information: "Incorrect Customer Information",
+  incorrect_amount: "Incorrect Amount",
+  duplicate_invoice: "Duplicate Invoice",
+  incorrect_items_services: "Incorrect Items / Services",
+  transaction_voided: "Transaction Voided",
+  other: "Other",
+};
+
 const moneyString = z
   .string()
   .trim()
@@ -129,9 +169,35 @@ export const queueOutboundDocumentSchema = z.object({
   id: z.string().trim().min(1, "Document id is required"),
 });
 
+export const requestDocumentCancellationSchema = z
+  .object({
+    id: z.string().trim().min(1, "Document id is required"),
+    reason: z.enum(CANCELLATION_REASONS, {
+      message: "Choose a cancellation reason",
+    }),
+    remarks: z
+      .string()
+      .trim()
+      .max(2000, "Remarks are too long")
+      .optional()
+      .or(z.literal("")),
+  })
+  .superRefine((value, ctx) => {
+    if (value.reason === "other" && !value.remarks?.trim()) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["remarks"],
+        message: "Remarks are required when the reason is Other",
+      });
+    }
+  });
+
 export type CreateOutboundDocumentInput = z.infer<
   typeof createOutboundDocumentSchema
 >;
 export type UpdateOutboundDocumentInput = z.infer<
   typeof updateOutboundDocumentSchema
+>;
+export type RequestDocumentCancellationInput = z.infer<
+  typeof requestDocumentCancellationSchema
 >;

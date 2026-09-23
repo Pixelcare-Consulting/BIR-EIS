@@ -1,6 +1,5 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -19,6 +18,7 @@ import {
   PTT_STATUS_LABELS,
   PTT_STATUSES,
 } from "@/features/settings/schemas/settings.schema";
+import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -234,20 +234,14 @@ export function EisCredentialsForm({
 
       <div className="flex items-center border-t border-border/60 pt-3.5">
         {canManage ? (
-          <Button
+          <ActionButton
             type="submit"
-            disabled={pending}
+            loading={pending}
+            loadingText="Saving…"
             className="h-10 rounded-md px-5 font-semibold shadow-sm"
           >
-            {pending ? (
-              <>
-                <Loader2 className="size-4 animate-spin" />
-                Saving…
-              </>
-            ) : (
-              "Save EIS credentials"
-            )}
-          </Button>
+            Save EIS credentials
+          </ActionButton>
         ) : (
           <p className="text-sm text-muted-foreground">
             You can view these credentials. Ask an admin to make changes.

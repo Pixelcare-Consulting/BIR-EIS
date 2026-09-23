@@ -21,6 +21,7 @@ import {
   LOGO_ACCEPT,
 } from "@/features/settings/lib/logo-file";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -217,20 +218,15 @@ export function ProfileSettingsForm({ initial }: ProfileSettingsFormProps) {
       ) : null}
 
       <div className="flex items-center border-t border-border/60 pt-5">
-        <Button
+        <ActionButton
           type="submit"
           disabled={busy}
+          loading={pending}
+          loadingText="Saving…"
           className="h-10 rounded-md px-5 font-semibold shadow-sm"
         >
-          {pending ? (
-            <>
-              <Loader2 className="size-4 animate-spin" />
-              Saving…
-            </>
-          ) : (
-            "Save profile"
-          )}
-        </Button>
+          Save profile
+        </ActionButton>
       </div>
     </form>
   );

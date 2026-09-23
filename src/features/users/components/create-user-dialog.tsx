@@ -1,7 +1,7 @@
 "use client";
 
-import { Check, Copy, Eye, EyeOff, Loader2, Plus, X } from "lucide-react";
-import { useActionState, useState } from "react";
+import { Check, Copy, Eye, EyeOff, Plus, X } from "lucide-react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -19,6 +19,7 @@ import {
   settingsSelectTriggerClassName,
 } from "@/features/settings/lib/field-styles";
 import { PASSWORD_RULES } from "@/features/settings/lib/password-rules";
+import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -42,8 +43,10 @@ import { cn } from "@/utils/cn";
 
 function CreateUserForm({
   onCreated,
+  onPendingChange,
 }: {
   onCreated: (result: CreateUserActionState) => void;
+  onPendingChange?: (pending: boolean) => void;
 }) {
   const [role, setRole] = useState<AssignableTenantRole>("member");
   const [password, setPassword] = useState("");
@@ -62,6 +65,10 @@ function CreateUserForm({
     },
     {} as CreateUserActionState,
   );
+
+  useEffect(() => {
+    onPendingChange?.(pending);
+  }, [pending, onPendingChange]);
 
   return (
     <form action={formAction} className="space-y-3.5">
@@ -195,16 +202,14 @@ function CreateUserForm({
       ) : null}
 
       <DialogFooter>
-        <Button type="submit" className="h-10" disabled={pending}>
-          {pending ? (
-            <>
-              <Loader2 className="size-4 animate-spin" />
-              Creating…
-            </>
-          ) : (
-            "Create user"
-          )}
-        </Button>
+        <ActionButton
+          type="submit"
+          className="h-10"
+          loading={pending}
+          loadingText="Creating…"
+        >
+          Create user
+        </ActionButton>
       </DialogFooter>
     </form>
   );
@@ -278,18 +283,22 @@ export function CreateUserDialog() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [formKey, setFormKey] = useState(0);
+  const [formPending, setFormPending] = useState(false);
   const [created, setCreated] = useState<CreateUserActionState | null>(null);
 
   function handleOpenChange(next: boolean) {
+    if (formPending && !next) return;
     setOpen(next);
     if (!next) {
       setCreated(null);
+      setFormPending(false);
       setFormKey((key) => key + 1);
     }
   }
 
   function handleCreated(result: CreateUserActionState) {
     setCreated(result);
+    setFormPending(false);
     router.refresh();
   }
 
@@ -319,7 +328,11 @@ export function CreateUserDialog() {
                 change their password after signing in.
               </DialogDescription>
             </DialogHeader>
-            <CreateUserForm key={formKey} onCreated={handleCreated} />
+            <CreateUserForm
+              key={formKey}
+              onCreated={handleCreated}
+              onPendingChange={setFormPending}
+            />
           </>
         )}
       </DialogContent>

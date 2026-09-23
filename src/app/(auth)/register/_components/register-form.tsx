@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useRef } from "react";
 
 import { registerAction } from "@/features/auth/actions/register.action";
+import { ActionButton } from "@/components/ui/action-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth/client";
@@ -47,9 +48,15 @@ export function RegisterForm() {
         password,
       })
       .then((result) => {
-        if (result.error) return;
+        if (result.error) {
+          signInStarted.current = false;
+          return;
+        }
         router.push("/dashboard");
         router.refresh();
+      })
+      .catch(() => {
+        signInStarted.current = false;
       });
   }, [state, router]);
 
@@ -115,20 +122,14 @@ export function RegisterForm() {
           {state.error}
         </div>
       ) : null}
-      {/* <Button
+      <ActionButton
         type="submit"
         className="h-11 w-full rounded-lg text-sm font-semibold shadow-sm"
-        disabled={isBusy}
+        loading={isBusy}
+        loadingText={state?.success ? "Signing in…" : "Creating…"}
       >
-        {isBusy ? (
-          <>
-            <Loader2 className="size-4 animate-spin" />
-            Creating…
-          </>
-        ) : (
-          "Create organization"
-        )}
-      </Button> */}
+        Create organization
+      </ActionButton>
     </form>
   );
 }

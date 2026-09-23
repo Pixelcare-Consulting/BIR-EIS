@@ -20,6 +20,8 @@ export const metadata = {
 
 function buildStatusDistribution(
   statusGroups: { status: string; _count: { _all: number } }[],
+  cancellationPendingCount: number,
+  cancelledCount: number,
 ) {
   const counts = {
     accepted: 0,
@@ -33,6 +35,12 @@ function buildStatusDistribution(
     else if (group.status === "rejected") counts.rejected += n;
     else counts.pending += n;
   }
+
+  counts.accepted = Math.max(
+    0,
+    counts.accepted - cancellationPendingCount - cancelledCount,
+  );
+  counts.pending += cancellationPendingCount + cancelledCount;
 
   const total = counts.accepted + counts.rejected + counts.pending;
   if (total === 0) return null;
@@ -75,7 +83,11 @@ export default async function DashboardPage() {
     getDocumentDashboardStats(tenantId),
   ]);
 
-  const statusDistribution = buildStatusDistribution(stats.statusGroups);
+  const statusDistribution = buildStatusDistribution(
+    stats.statusGroups,
+    stats.cancellationPendingCount,
+    stats.cancelledCount,
+  );
   const topCustomers = buildTopCustomers(stats.counterparts);
 
   return (
@@ -91,6 +103,8 @@ export default async function DashboardPage() {
           outbound: stats.outboundCount,
           inbound: stats.inboundCount,
           companies: 1,
+          cancellationPending: stats.cancellationPendingCount,
+          cancelled: stats.cancelledCount,
         }}
       />
       <div className="grid gap-5 xl:grid-cols-3">

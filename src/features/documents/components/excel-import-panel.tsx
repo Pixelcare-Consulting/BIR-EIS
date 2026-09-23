@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Download, FileSpreadsheet, Loader2, Upload } from "lucide-react";
+import { Download, FileSpreadsheet, Upload } from "lucide-react";
 import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import {
   type ImportOutboundCsvState,
 } from "@/features/documents/actions/import-outbound-csv.action";
 import { OUTBOUND_CSV_MAX_ROWS } from "@/features/documents/lib/bir-portal-field-map";
+import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/utils/cn";
@@ -262,23 +263,15 @@ export function ExcelImportPanel({
           ) : (
             <span className="hidden text-sm text-muted-foreground sm:inline" />
           )}
-          <Button
+          <ActionButton
             type="submit"
-            disabled={pending}
+            loading={pending}
+            loadingText="Importing…"
             className="h-10 w-full cursor-pointer sm:ml-auto sm:w-auto"
           >
-            {pending ? (
-              <>
-                <Loader2 className="size-4 animate-spin" />
-                Importing…
-              </>
-            ) : (
-              <>
-                <Upload className="size-4" />
-                Import drafts
-              </>
-            )}
-          </Button>
+            <Upload className="size-4" />
+            Import drafts
+          </ActionButton>
         </div>
       </div>
     </form>

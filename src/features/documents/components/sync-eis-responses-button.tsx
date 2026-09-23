@@ -1,49 +1,78 @@
 "use client";
 
-import { Loader2, RefreshCw } from "lucide-react";
-import { useActionState, useEffect } from "react";
+import { RefreshCw } from "lucide-react";
+import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { DocumentActionState } from "@/features/documents/actions/create-outbound-document.action";
 import { syncEisResponsesAction } from "@/features/documents/actions/sync-eis-responses.action";
+import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function SyncEisResponsesButton() {
   const router = useRouter();
+  const [dismissedKey, setDismissedKey] = useState<string | null>(null);
   const [state, formAction, pending] = useActionState(
     syncEisResponsesAction,
     {} as DocumentActionState,
   );
 
-  useEffect(() => {
-    if (state.success) router.refresh();
-  }, [state.success, router]);
+  const resultKey =
+    state.success || state.error
+      ? `${state.success ? "ok" : "err"}:${state.message ?? ""}:${state.error ?? ""}`
+      : null;
+  const resultOpen = Boolean(resultKey && resultKey !== dismissedKey);
+  const isError = Boolean(state.error);
+
+  function handleResultOpenChange(next: boolean) {
+    if (next || !resultKey) return;
+    setDismissedKey(resultKey);
+    if (state.success) {
+      router.refresh();
+    }
+  }
+
+  function handleSyncAction(formData: FormData) {
+    setDismissedKey(null);
+    return formAction(formData);
+  }
 
   return (
-    <form action={formAction} className="flex flex-col items-end gap-2">
-      {state.error ? (
-        <p className="text-sm text-sidebar-muted" role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success && state.message ? (
-        <p className="max-w-xs text-right text-sm text-sidebar-muted" role="status">
-          {state.message}
-        </p>
-      ) : null}
-      <Button type="submit" disabled={pending}>
-        {pending ? (
-          <>
-            <Loader2 className="size-4 animate-spin" />
-            Syncing…
-          </>
-        ) : (
-          <>
-            <RefreshCw className="size-4" />
-            Sync from EIS
-          </>
-        )}
-      </Button>
-    </form>
+    <>
+      <form action={handleSyncAction} className="flex justify-end">
+        <ActionButton type="submit" loading={pending} loadingText="Syncing…">
+          <RefreshCw className="size-4" />
+          Sync from EIS
+        </ActionButton>
+      </form>
+
+      <Dialog open={resultOpen} onOpenChange={handleResultOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {isError ? "Sync failed" : "Sync complete"}
+            </DialogTitle>
+            <DialogDescription>
+              {state.error ??
+                state.message ??
+                "EIS responses were refreshed."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" onClick={() => handleResultOpenChange(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

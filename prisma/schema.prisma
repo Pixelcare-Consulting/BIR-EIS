@@ -52,12 +52,13 @@ model User {
   updatedAt     DateTime  @updatedAt @map("updated_at")
   deletedAt     DateTime? @map("deleted_at")
 
-  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  userRoles        UserRole[]
-  accounts         Account[]
-  sessions         Session[]
-  auditLogs        AuditLog[]
-  invoiceDocuments InvoiceDocument[]
+  tenant               Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userRoles            UserRole[]
+  accounts             Account[]
+  sessions             Session[]
+  auditLogs            AuditLog[]
+  invoiceDocuments     InvoiceDocument[] @relation("DocumentCreator")
+  cancellationRequests InvoiceDocument[] @relation("CancellationRequester")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -85,6 +86,10 @@ model InvoiceDocument {
   totalAmount         Decimal   @map("total_amount") @db.Decimal(18, 2)
   /// MVP line items as JSON array (header amounts are authoritative).
   lineItems           Json?     @map("line_items")
+  /// CAS-shaped unsigned BIR EIS draft JSON (mapped at create/edit; not JWS-signed).
+  eisJsonPayload      Json?     @map("eis_json_payload")
+  /// When eisJsonPayload was last built from document + seller fields.
+  eisJsonMappedAt     DateTime? @map("eis_json_mapped_at")
   eisReferenceId      String?   @map("eis_reference_id")
   /// pending | accepted | rejected (EIS response)
   eisAckStatus        String?   @map("eis_ack_status")
@@ -92,17 +97,42 @@ model InvoiceDocument {
   eisAckAt            DateTime? @map("eis_ack_at")
   submittedAt         DateTime? @map("submitted_at")
   notes               String?   @db.Text
+  /// manual | import | erp_sync
+  source              String    @default("manual")
+  /// ERP provider code when source = erp_sync (sap_b1, acumatica, …)
+  sourceSystem        String?   @map("source_system")
+  /// ERP connection display name when source = erp_sync
+  sourceLabel         String?   @map("source_label")
+  /// null | requested | pending | accepted | rejected (separate from EIS transmission status)
+  cancellationStatus         String?   @map("cancellation_status")
+  cancellationReason         String?   @map("cancellation_reason")
+  cancellationRemarks        String?   @map("cancellation_remarks") @db.Text
+  cancellationRequestedAt    DateTime? @map("cancellation_requested_at")
+  cancellationRequestedById  String?   @map("cancellation_requested_by_id")
+  cancelledAt                DateTime? @map("cancelled_at")
+  cancellationReferenceId    String?   @map("cancellation_reference_id")
+  /// pending | accepted | rejected (sandbox EIS cancellation response)
+  cancellationAckStatus      String?   @map("cancellation_ack_status")
+  cancellationAckMessage     String?   @map("cancellation_ack_message") @db.Text
+  cancellationAckAt          DateTime? @map("cancellation_ack_at")
+  /// Optional link to an original invoice (future CN/DN/adjustment workflow).
+  originalDocumentId         String?   @map("original_document_id")
   createdById         String?   @map("created_by_id")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
   deletedAt           DateTime? @map("deleted_at")
 
-  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  createdBy User?  @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  tenant                  Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy               User?            @relation("DocumentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  cancellationRequestedBy User?            @relation("CancellationRequester", fields: [cancellationRequestedById], references: [id], onDelete: SetNull)
+  originalDocument        InvoiceDocument? @relation("DocumentAdjustments", fields: [originalDocumentId], references: [id], onDelete: SetNull)
+  adjustments             InvoiceDocument[] @relation("DocumentAdjustments")
 
   @@index([tenantId, direction, createdAt])
   @@index([tenantId, status])
+  @@index([tenantId, status, eisAckStatus])
   @@index([tenantId, direction, documentNumber])
+  @@index([tenantId, cancellationStatus])
   @@map("invoice_documents")
 }
 

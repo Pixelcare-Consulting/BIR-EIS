@@ -43,6 +43,15 @@ export interface DemoInvoiceDocumentSeed {
   eisAckAt?: string;
   submittedAt?: string;
   notes?: string;
+  cancellationStatus?: string;
+  cancellationReason?: string;
+  cancellationRemarks?: string;
+  cancellationRequestedAt?: string;
+  cancelledAt?: string;
+  cancellationReferenceId?: string;
+  cancellationAckStatus?: string;
+  cancellationAckMessage?: string;
+  cancellationAckAt?: string;
 }
 
 /**
@@ -174,5 +183,86 @@ export const DEMO_INVOICE_DOCUMENTS: DemoInvoiceDocumentSeed[] = [
     eisAckMessage: "Document accepted by EIS (demo)",
     eisAckAt: "2026-08-09T16:45:00+08:00",
     submittedAt: "2026-08-09T10:20:00+08:00",
+  },
+  {
+    direction: "outbound",
+    documentType: "sales_invoice",
+    status: "accepted",
+    documentNumber: "SI-2026-0008",
+    issueDate: "2026-09-10",
+    currency: "PHP",
+    counterpartName: "Island Logistics Co.",
+    counterpartTin: "000444555666",
+    lineExtensionAmount: "9200.00",
+    taxAmount: "1104.00",
+    totalAmount: "10304.00",
+    eisReferenceId: "EIS-DEMO-SI-0008",
+    eisAckStatus: "accepted",
+    eisAckMessage: "Document accepted by EIS (demo)",
+    eisAckAt: "2026-09-10T11:00:00+08:00",
+    submittedAt: "2026-09-10T08:30:00+08:00",
+    cancellationStatus: "pending",
+    cancellationReason: "incorrect_amount",
+    cancellationRemarks: "Demo: amount correction pending sandbox EIS response",
+    cancellationRequestedAt: "2026-09-12T09:00:00+08:00",
+    cancellationReferenceId: "EIS-CANCEL-SANDBOX-SI-2026-0008",
+    cancellationAckStatus: "pending",
+    cancellationAckMessage:
+      "Sandbox EIS (certification simulation): cancellation submitted; awaiting response.",
+  },
+  {
+    direction: "outbound",
+    documentType: "sales_invoice",
+    status: "accepted",
+    documentNumber: "SI-2026-0009",
+    issueDate: "2026-09-11",
+    currency: "PHP",
+    counterpartName: "San Miguel Foods",
+    counterpartTin: "000123456789",
+    lineExtensionAmount: "6400.00",
+    taxAmount: "768.00",
+    totalAmount: "7168.00",
+    eisReferenceId: "EIS-DEMO-SI-0009",
+    eisAckStatus: "accepted",
+    eisAckMessage: "Document accepted by EIS (demo)",
+    eisAckAt: "2026-09-11T14:00:00+08:00",
+    submittedAt: "2026-09-11T09:00:00+08:00",
+    cancellationStatus: "accepted",
+    cancellationReason: "customer_request",
+    cancellationRemarks: "Demo: customer voided the order",
+    cancellationRequestedAt: "2026-09-13T10:00:00+08:00",
+    cancelledAt: "2026-09-13T10:15:00+08:00",
+    cancellationReferenceId: "EIS-CANCEL-SANDBOX-SI-2026-0009",
+    cancellationAckStatus: "accepted",
+    cancellationAckMessage:
+      "Sandbox EIS (certification simulation): cancellation accepted.",
+    cancellationAckAt: "2026-09-13T10:15:00+08:00",
+  },
+  {
+    direction: "outbound",
+    documentType: "sales_invoice",
+    status: "accepted",
+    documentNumber: "SI-2026-0010",
+    issueDate: "2026-09-14",
+    currency: "PHP",
+    counterpartName: "Metro Retail Corp.",
+    counterpartTin: "000987654321",
+    lineExtensionAmount: "3300.00",
+    taxAmount: "396.00",
+    totalAmount: "3696.00",
+    eisReferenceId: "EIS-DEMO-SI-0010",
+    eisAckStatus: "accepted",
+    eisAckMessage: "Document accepted by EIS (demo)",
+    eisAckAt: "2026-09-14T15:00:00+08:00",
+    submittedAt: "2026-09-14T10:00:00+08:00",
+    cancellationStatus: "rejected",
+    cancellationReason: "duplicate_invoice",
+    cancellationRemarks: "Demo: sandbox rejected this cancellation attempt",
+    cancellationRequestedAt: "2026-09-15T11:00:00+08:00",
+    cancellationReferenceId: "EIS-CANCEL-SANDBOX-SI-2026-0010",
+    cancellationAckStatus: "rejected",
+    cancellationAckMessage:
+      "Sandbox EIS (certification simulation): cancellation rejected.",
+    cancellationAckAt: "2026-09-15T11:20:00+08:00",
   },
 ];

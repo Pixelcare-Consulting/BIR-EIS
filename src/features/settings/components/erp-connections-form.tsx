@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -20,6 +20,7 @@ import {
   ERP_PROVIDER_LABELS,
   ERP_PROVIDERS,
 } from "@/features/settings/schemas/erp-connection.schema";
+import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -275,22 +276,14 @@ function ConnectionEditor({
 
         {canManage ? (
           <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3.5">
-            <Button
+            <ActionButton
               type="submit"
-              disabled={pending}
+              loading={pending}
+              loadingText="Saving…"
               className="h-10 rounded-md px-5 font-semibold shadow-sm"
             >
-              {pending ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Saving…
-                </>
-              ) : initial ? (
-                "Save changes"
-              ) : (
-                "Save connection"
-              )}
-            </Button>
+              {initial ? "Save changes" : "Save connection"}
+            </ActionButton>
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
@@ -303,22 +296,17 @@ function ConnectionEditor({
         <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
           <form action={testAction}>
             <input type="hidden" name="id" value={initial.id} />
-            <Button
+            <ActionButton
               type="submit"
               variant="outline"
               size="sm"
-              disabled={testPending || pending}
+              disabled={pending}
+              loading={testPending}
+              loadingText="Testing…"
               className="h-9"
             >
-              {testPending ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Testing…
-                </>
-              ) : (
-                "Test connection"
-              )}
-            </Button>
+              Test connection
+            </ActionButton>
           </form>
           {testState.error ? (
             <p className="text-sm text-destructive" role="alert">
@@ -358,20 +346,17 @@ function DeleteConnectionButton({
   return (
     <form action={formAction}>
       <input type="hidden" name="id" value={connectionId} />
-      <Button
+      <ActionButton
         type="submit"
         variant="outline"
         size="sm"
-        disabled={pending}
+        loading={pending}
+        loadingText="Removing…"
         className="h-8 text-destructive hover:bg-destructive/5 hover:text-destructive"
       >
-        {pending ? (
-          <Loader2 className="size-3.5 animate-spin" />
-        ) : (
-          <Trash2 className="size-3.5" />
-        )}
+        <Trash2 className="size-3.5" />
         Remove
-      </Button>
+      </ActionButton>
       {state.error ? (
         <p className="mt-1 text-xs text-destructive" role="alert">
           {state.error}

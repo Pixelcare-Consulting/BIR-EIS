@@ -6,64 +6,101 @@ import type { IngestRowInput } from "@/features/documents/lib/create-outbound-dr
 
 type ErpSamplePayload = Record<string, string>;
 
+/** Sandbox ERP sync: a few varied drafts per run (no live HTTP). */
+export const SANDBOX_ERP_SYNC_BATCH_MIN = 3;
+export const SANDBOX_ERP_SYNC_BATCH_MAX = 5;
+
+const SANDBOX_DOC_TYPES = [
+  "sales_invoice",
+  "official_receipt",
+  "service_billing",
+  "debit_note",
+  "credit_note",
+] as const;
+
+const SANDBOX_COUNTERPARTS: Array<{ name: string; tin: string }> = [
+  { name: "Sandbox Trading Co.", tin: "123-456-789-00000" },
+  { name: "Demo Retail Partners", tin: "987-654-321-00000" },
+  { name: "Acme Services PH", tin: "111-222-333-00000" },
+  { name: "Northern Distributors Inc.", tin: "555-666-777-00000" },
+  { name: "Metro Supply Chain Ltd.", tin: "444-333-222-00000" },
+  { name: "Pacific Logistics Hub", tin: "" },
+  { name: "Sunrise Manufacturing", tin: "222-111-000-00000" },
+  { name: "Cebu Wholesale Group", tin: "888-777-666-00000" },
+];
+
+const DOC_NUM_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function randomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function randomPick<T>(items: readonly T[]): T {
+  return items[randomInt(0, items.length - 1)]!;
+}
+
+function randomAlphanumeric(length: number): string {
+  let out = "";
+  for (let i = 0; i < length; i++) {
+    out += DOC_NUM_ALPHABET[randomInt(0, DOC_NUM_ALPHABET.length - 1)];
+  }
+  return out;
+}
+
+function randomIssueDate(): string {
+  const daysAgo = randomInt(0, 90);
+  const date = new Date();
+  date.setDate(date.getDate() - daysAgo);
+  return date.toISOString().slice(0, 10);
+}
+
+function formatMoney(value: number): string {
+  return value.toFixed(2);
+}
+
 /**
- * Deterministic sandbox ERP documents (no live HTTP).
+ * Random sandbox ERP documents (no live HTTP).
  * Uses SAP B1–style source keys; apply `fieldMap` to portal fields.
  */
 function buildSandboxPayloads(connectionId: string): ErpSamplePayload[] {
   const stamp = connectionId.slice(-4).toUpperCase() || "DEMO";
-  const today = new Date().toISOString().slice(0, 10);
+  const batchSize = randomInt(
+    SANDBOX_ERP_SYNC_BATCH_MIN,
+    SANDBOX_ERP_SYNC_BATCH_MAX,
+  );
+  const usedNumbers = new Set<string>();
+  const payloads: ErpSamplePayload[] = [];
 
-  return [
-    {
-      DocType: "sales_invoice",
-      DocNum: `ERP-${stamp}-001`,
-      DocDate: today,
+  for (let index = 0; index < batchSize; index++) {
+    let docNum: string;
+    do {
+      docNum = `ERP-${stamp}-${randomAlphanumeric(6)}`;
+    } while (usedNumbers.has(docNum));
+    usedNumbers.add(docNum);
+
+    const counterpart = randomPick(SANDBOX_COUNTERPARTS);
+    const docType = randomPick(SANDBOX_DOC_TYPES);
+    const netBase = randomInt(400, 45_000);
+    const netCents = randomInt(0, 99) / 100;
+    const net = netBase + netCents;
+    const vat = Math.round(net * 0.12 * 100) / 100;
+    const total = Math.round((net + vat) * 100) / 100;
+
+    payloads.push({
+      DocType: docType,
+      DocNum: docNum,
+      DocDate: randomIssueDate(),
       DocCurrency: "PHP",
-      CardName: "Sandbox Trading Co.",
-      LicTradNum: "123-456-789-00000",
-      DocTotalNet: "2500.00",
-      VatSum: "300.00",
-      DocTotal: "2800.00",
-      Comments: "Sandbox ERP sync sample 1",
-    },
-    {
-      DocType: "official_receipt",
-      DocNum: `ERP-${stamp}-002`,
-      DocDate: today,
-      DocCurrency: "PHP",
-      CardName: "Demo Retail Partners",
-      LicTradNum: "987-654-321-00000",
-      DocTotalNet: "800.00",
-      VatSum: "96.00",
-      DocTotal: "896.00",
-      Comments: "Sandbox ERP sync sample 2",
-    },
-    {
-      DocType: "service_billing",
-      DocNum: `ERP-${stamp}-003`,
-      DocDate: today,
-      DocCurrency: "PHP",
-      CardName: "Acme Services PH",
-      LicTradNum: "111-222-333-00000",
-      DocTotalNet: "15000.00",
-      VatSum: "1800.00",
-      DocTotal: "16800.00",
-      Comments: "Sandbox ERP sync sample 3",
-    },
-    {
-      DocType: "sales_invoice",
-      DocNum: `ERP-${stamp}-004`,
-      DocDate: today,
-      DocCurrency: "PHP",
-      CardName: "Northern Distributors Inc.",
-      LicTradNum: "",
-      DocTotalNet: "420.50",
-      VatSum: "50.46",
-      DocTotal: "470.96",
-      Comments: "Sandbox ERP sync sample 4",
-    },
-  ];
+      CardName: counterpart.name,
+      LicTradNum: counterpart.tin,
+      DocTotalNet: formatMoney(net),
+      VatSum: formatMoney(vat),
+      DocTotal: formatMoney(total),
+      Comments: `Sandbox ERP sync sample ${index + 1}`,
+    });
+  }
+
+  return payloads;
 }
 
 function asStringRecord(

@@ -1,5 +1,6 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/lib/database/generated/prisma/client";
+import { normalizeDatabaseUrl } from "@/lib/database/normalize-database-url";
 
 const prismaLogLevels =
   process.env.NODE_ENV === "development"
@@ -14,7 +15,9 @@ function createDatabaseAdapter(): PrismaPg {
     throw new Error("DATABASE_URL is required for Prisma Client");
   }
 
-  return new PrismaPg({ connectionString });
+  return new PrismaPg({
+    connectionString: normalizeDatabaseUrl(connectionString),
+  });
 }
 
 export function createPrismaClient(): PrismaClient {

@@ -2,8 +2,8 @@
 
 Multi-tenant SaaS middleware that maps ERP, manual, and API invoice data to BIR-compliant JSON, signs with JWS, and transmits and tracks submissions to the Bureau of Internal Revenue Electronic Invoicing System (EIS) / eSRS.
 
-**Current version:** `0.7.0`  
-**Status:** Foundation MVP + document inbox, ERP/Excel ingest (sandbox sync + CSV import), portal settings, account profile/password, EIS credential vault, audit logs, provider console (workspace provisioning + sign-in branding), organization user management, and public mandate / help education on the landing page
+**Current version:** `0.10.0`  
+**Status:** Foundation MVP + document inbox, ERP/Excel ingest (sandbox sync + CSV import), CAS-shaped draft EIS JSON preview on outbound documents, portal settings, account profile/password, EIS credential vault, audit logs, provider console (workspace provisioning + sign-in branding), organization user management, invoice cancellation (sandbox), and public mandate / help education on the landing page
 
 ## Why this exists
 
@@ -69,6 +69,7 @@ flowchart TB
 
 - Structured **JSON** invoices (PDF or scans alone do not qualify)
 - **JWS** digital signature on transmitted documents
+- EIS acknowledgements are status codes and reference IDs in the API response—not a separate BIR “response PDF” template; the portal shows those fields on Inbound detail
 - Document types commonly cited: Sales Invoice, Official Receipt, Service Billing, Debit/Credit Note (or Memo)
 - Typical path: create → sign → send (API or eSRS) → confirmation; industry guidance often cites a **3-day** reporting window once ESRS is live
 - Onboarding path: EIS Cert portal → software testing capabilities → taxpayer **Permit to Transmit (PTT)**
@@ -92,6 +93,7 @@ src/
 ├── features/
 │   ├── auth/            # Auth actions + schemas
 │   ├── documents/       # Outbound/inbound inbox, CSV/ERP ingest, actions, UI
+│   ├── eis/             # Sandbox EIS adapters (cancellation; transmit later)
 │   ├── provider/        # Provider console actions, branding, schemas
 │   ├── settings/        # Org + EIS + ERP connection forms/actions
 │   ├── tenants/         # Shared tenant provisioning
@@ -100,7 +102,7 @@ src/
 └── proxy.ts             # Deny-by-default route protection
 ```
 
-EIS transmit `features/eis/` lands in a later slice.
+EIS transmit and cancellation adapters live under `features/eis/` (sandbox / certification simulation first).
 
 ## Stack
 
@@ -110,7 +112,7 @@ EIS transmit `features/eis/` lands in a later slice.
 
 ## What’s shipped vs roadmap
 
-### Shipped (`0.2.0`–`0.7.0`)
+### Shipped (`0.2.0`–`0.8.2`)
 
 | Item | Notes |
 |------|--------|
@@ -121,13 +123,14 @@ EIS transmit `features/eis/` lands in a later slice.
 | Prisma 7 + Postgres | Tenant/User/Role/Permission + EisCredential + ErpConnection + AuditLog + InvoiceDocument + PlatformSettings + Better Auth tables |
 | App shell | Marketing landing, login, authenticated dashboard + shadcn sidebar-07 shell |
 | Landing education | Mandate, interactive steps, requirements checklist, Help & Support; profile-menu links (`0.6.0`) |
-| Dashboard overview | Live outbound / EIS-response KPIs and status mix from documents when present (`0.4.0`+) |
-| Outbound inbox | Prepare and queue invoices for BIR/EIS submission; read-only EIS response on detail (`0.4.0`+) |
-| Inbound inbox | EIS response inbox for those submissions; **Sync from EIS** sandbox refresh (`0.4.1`) |
+| Dashboard overview | Live outbound / EIS-response / cancellation KPIs and status mix from documents when present (`0.4.0`+) |
+| Outbound inbox | Prepare and queue invoices for BIR/EIS submission; single business status; View / Cancel actions; transaction history (`0.9.0`); **View JSON** draft EIS payload (`0.10.0`) |
+| Invoice cancellation | Sandbox-only adapter (no live BIR cancel API in repo); Cancel when EIS-accepted; Sync from EIS refreshes pending cancels (`0.8.0`–`0.9.0`) |
+| Inbound inbox | EIS response inbox with the same status, Cancel, and transaction history as outbound (`0.9.0`); **Sync from EIS** sandbox refresh (`0.4.1`) |
 | ERP + Excel ingest | Settings → Integrations ERP connections; sandbox ERP sync; CSV template download/upload (max 200 rows) (`0.5.0`) |
 | Organization settings | Name, tagline, logo (`0.3.0`); two-pane Settings menu (`0.3.1`) |
 | EIS credential vault | TIN, Cert/Prod, PTT metadata, encrypted API key with last-4 mask (`0.3.0`) |
-| Audit logs | Tenant-scoped activity list including document events (`0.3.0`+) |
+| Audit logs | Tenant-scoped activity list including document and cancellation events (`0.3.0`+) |
 | Users | Create, change role, soft-deactivate (tenant admins; `users.manage`) (`0.7.0`) |
 | Releases | `src/content/releases.ts` aligned with `package.json` |
 | Docs / env | README, `.env.example` (includes `CREDENTIALS_ENCRYPTION_KEY`), Postgres notes |
@@ -137,7 +140,7 @@ EIS transmit `features/eis/` lands in a later slice.
 | Item | Notes |
 |------|--------|
 | Live ERP HTTP connectors | Real SAP B1 / Acumatica / ERPNext pull beyond sandbox mock |
-| JSON + JWS pipeline | Validate, map, sign (RS256) |
+| JSON + JWS pipeline | CAS-shaped unsigned draft JSON mapping started (`0.10.0`); validate + JWS sign (RS256) still later |
 | EIS transmit adapter | Cert/sandbox first, then production (live HTTP send) |
 | Email invites | Invite links and richer membership UX beyond admin-created accounts |
 

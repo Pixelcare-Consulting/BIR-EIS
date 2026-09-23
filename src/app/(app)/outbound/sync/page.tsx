@@ -35,7 +35,7 @@ export default async function OutboundErpSyncPage() {
       <PageHeaderCard
         icon={<RefreshCw className="size-5" />}
         title="ERP Sync"
-        description="Pull sandbox ERP invoices into Outbound drafts using a saved connection."
+        description="Sync varied sandbox ERP sample invoices into Outbound drafts using a saved connection."
         aside={
           <Button asChild variant="onNavyOutline">
             <Link href="/outbound">
@@ -48,7 +48,7 @@ export default async function OutboundErpSyncPage() {
 
       <DocumentContentCard
         title="Sandbox sync"
-        description="Choose an enabled ERP connection, then sync. Sample documents are mapped with your saved field map."
+        description="Choose an enabled ERP connection, then sync. Each run creates a small batch of varied sandbox samples mapped with your saved field map."
       >
         <ErpSyncPanel
           connections={connections.map((connection) => ({

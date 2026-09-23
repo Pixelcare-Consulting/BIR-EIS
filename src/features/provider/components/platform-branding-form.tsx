@@ -24,6 +24,7 @@ import {
   LOGO_ACCEPT,
 } from "@/features/settings/lib/logo-file";
 import { Button } from "@/components/ui/button";
+import { ActionButton } from "@/components/ui/action-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -235,20 +236,15 @@ export function PlatformBrandingForm({ initial }: PlatformBrandingFormProps) {
       ) : null}
 
       <div className="flex items-center border-t border-border/60 pt-3.5">
-        <Button
+        <ActionButton
           type="submit"
           disabled={busy}
+          loading={pending}
+          loadingText="Saving…"
           className="h-10 rounded-md px-5 font-semibold shadow-sm"
         >
-          {pending ? (
-            <>
-              <Loader2 className="size-4 animate-spin" />
-              Saving…
-            </>
-          ) : (
-            "Save branding"
-          )}
-        </Button>
+          Save branding
+        </ActionButton>
       </div>
     </form>
   );

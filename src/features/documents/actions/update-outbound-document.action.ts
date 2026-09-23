@@ -8,6 +8,11 @@ import {
   toNullableTin,
 } from "@/features/documents/lib/document-form-data";
 import { documentNumberExists } from "@/features/documents/lib/document-queries";
+import type { CasEisLineItemInput } from "@/features/documents/lib/build-cas-eis-draft-json";
+import {
+  buildEisJsonPersistFields,
+  loadEisSellerForTenant,
+} from "@/features/documents/lib/eis-json-persist";
 import { updateOutboundDocumentSchema } from "@/features/documents/schemas/document.schema";
 import { writeAuditLog } from "@/lib/audit/write-audit-log";
 import { requirePermission } from "@/lib/auth/permissions";
@@ -40,7 +45,7 @@ export async function updateOutboundDocumentAction(
       direction: "outbound",
       deletedAt: null,
     },
-    select: { id: true, status: true, documentNumber: true },
+    select: { id: true, status: true, documentNumber: true, lineItems: true },
   });
 
   if (!existing) {
@@ -64,19 +69,45 @@ export async function updateOutboundDocumentAction(
   }
 
   try {
+    const seller = await loadEisSellerForTenant(tenantId);
+    const issueDate = new Date(data.issueDate);
+    const counterpartTin = toNullableTin(data.counterpartTin);
+    const notes = toNullableNotes(data.notes);
+    const lineItems = Array.isArray(existing.lineItems)
+      ? (existing.lineItems as CasEisLineItemInput[])
+      : null;
+    const eisJson = buildEisJsonPersistFields(
+      {
+        id: existing.id,
+        documentType: data.documentType,
+        documentNumber: data.documentNumber,
+        issueDate,
+        currency: data.currency.toUpperCase(),
+        counterpartName: data.counterpartName,
+        counterpartTin,
+        lineExtensionAmount: data.lineExtensionAmount,
+        taxAmount: data.taxAmount,
+        totalAmount: data.totalAmount,
+        notes,
+        lineItems,
+      },
+      seller,
+    );
+
     const updated = await prisma.invoiceDocument.update({
       where: { id: existing.id },
       data: {
         documentType: data.documentType,
         documentNumber: data.documentNumber,
-        issueDate: new Date(data.issueDate),
+        issueDate,
         currency: data.currency.toUpperCase(),
         counterpartName: data.counterpartName,
-        counterpartTin: toNullableTin(data.counterpartTin),
+        counterpartTin,
         lineExtensionAmount: data.lineExtensionAmount,
         taxAmount: data.taxAmount,
         totalAmount: data.totalAmount,
-        notes: toNullableNotes(data.notes),
+        notes,
+        ...eisJson,
       },
       select: { id: true, documentNumber: true },
     });
@@ -101,3 +132,4 @@ export async function updateOutboundDocumentAction(
     return { error: "Could not update the document. Please try again." };
   }
 }
+

@@ -46,6 +46,242 @@ export interface ReleaseNote {
 
 export const RELEASES: ReleaseNote[] = [
   {
+    version: "0.10.0",
+    date: "2026-09-23",
+    releasedAt: "2026-09-23T23:45:00+08:00",
+    title: "View draft EIS JSON on outbound documents",
+    highlights: [
+      "Open View JSON on an outbound document to inspect the draft EIS payload",
+      "Draft JSON is prepared when you create or update an outbound draft",
+      "Payload follows the public CAS-shaped layout and is not signed yet",
+    ],
+    changes: [
+      {
+        type: "feature",
+        description:
+          "Outbound Document details and Edit draft include View JSON so you can review the draft EIS payload before submission",
+      },
+      {
+        type: "improvement",
+        description:
+          "Creating or updating an outbound draft refreshes the mapped EIS JSON so the preview stays current",
+      },
+    ],
+  },
+  {
+    version: "0.9.4",
+    date: "2026-09-23",
+    releasedAt: "2026-09-23T23:35:00+08:00",
+    title: "Clearer outbound status and confirmations",
+    highlights: [
+      "Outbound filters focus on Draft, Pending, and Submitted—easier to find work in progress",
+      "Creating a draft or submitting to EIS shows a clear confirmation dialog",
+      "Sync from EIS reports results in a dialog instead of small text beside the button",
+      "EIS acknowledgements stay as status details on each response—there is no separate BIR response PDF to download",
+    ],
+    changes: [
+      {
+        type: "improvement",
+        description:
+          "Outbound status filters are simplified to All, Draft, Pending, and Submitted, with Pending used for documents waiting to go to EIS",
+      },
+      {
+        type: "improvement",
+        description:
+          "Creating an outbound draft opens a confirmation dialog with options to view the document or return to the Outbound list",
+      },
+      {
+        type: "improvement",
+        description:
+          "Submitting a document to EIS shows a success confirmation after you confirm the send",
+      },
+      {
+        type: "improvement",
+        description:
+          "Sync from EIS on the Inbound inbox shows the sync result in a dialog so the outcome is easy to read",
+      },
+      {
+        type: "improvement",
+        description:
+          "EIS acknowledgements continue to appear as status codes and reference details on each response—BIR does not provide a separate response PDF template for this flow",
+      },
+    ],
+  },
+  {
+    version: "0.9.3",
+    date: "2026-09-23",
+    releasedAt: "2026-09-23T23:20:00+08:00",
+    title: "See where outbound invoices came from",
+    highlights: [
+      "Outbound lists show whether each draft came from Manual entry, Excel import, or an ERP connection",
+      "EIS response stays on the Inbound list where it belongs",
+    ],
+    changes: [
+      {
+        type: "improvement",
+        description:
+          "Outbound document lists include a Source column so you can tell Manual, Excel import, and ERP-synced drafts apart at a glance",
+      },
+      {
+        type: "improvement",
+        description:
+          "Inbound (EIS response) lists keep the EIS response column and no longer show Source, so each list stays focused on what you need there",
+      },
+    ],
+  },
+  {
+    version: "0.9.2",
+    date: "2026-09-23",
+    releasedAt: "2026-09-23T23:05:00+08:00",
+    title: "Transaction history loads reliably",
+    highlights: [
+      "Invoice detail pages open transaction history without crashing when dates are missing or formatted differently",
+    ],
+    changes: [
+      {
+        type: "fix",
+        description:
+          "Transaction history on outbound and EIS response pages no longer fails to load when an invoice date is unavailable",
+      },
+    ],
+  },
+  {
+    version: "0.9.1",
+    date: "2026-09-23",
+    releasedAt: "2026-09-23T22:55:00+08:00",
+    title: "Fresh ERP sandbox samples each sync",
+    highlights: [
+      "Each ERP Sync run adds a small batch of new sample drafts instead of repeating the same four documents",
+    ],
+    changes: [
+      {
+        type: "improvement",
+        description:
+          "ERP Sync in Outbound generates varied sandbox sample invoices—different numbers, customers, amounts, types, and dates—so you can practice queueing without hitting duplicates every time",
+      },
+    ],
+  },
+  {
+    version: "0.9.0",
+    date: "2026-09-23",
+    releasedAt: "2026-09-23T22:50:00+08:00",
+    title: "Clearer invoice cancellation journey",
+    highlights: [
+      "One status on lists and detail pages so Cancelled is easy to read at a glance",
+      "View and Cancel sit right in the list and on detail headers when you can use them",
+      "Transaction history walks the full journey with the latest step standing out",
+    ],
+    changes: [
+      {
+        type: "feature",
+        description:
+          "Transaction history on outbound and EIS response detail pages walks through creation, submission, EIS acknowledgement, and cancellation",
+      },
+      {
+        type: "improvement",
+        description:
+          "Document lists and detail views show a single current status (including Cancelled and Cancellation pending) instead of overlapping badges",
+      },
+      {
+        type: "improvement",
+        description:
+          "View and Cancel show as direct actions on document lists and detail headers when you have permission and the invoice is eligible",
+      },
+      {
+        type: "improvement",
+        description:
+          "Transaction history highlights only the latest step in color so earlier milestones stay easy to scan",
+      },
+      {
+        type: "fix",
+        description:
+          "EIS response detail now supports cancellation the same way as outbound, with status and actions aligned",
+      },
+      {
+        type: "fix",
+        description:
+          "Transaction history lists steps in true time order from invoice creation through cancellation",
+      },
+    ],
+  },
+  {
+    version: "0.8.2",
+    date: "2026-09-23",
+    releasedAt: "2026-09-23T22:20:00+08:00",
+    title: "Clearer cancellation dashboard labels",
+    highlights: [
+      "Cancelled and pending cancellation cards use clearer captions on the dashboard",
+    ],
+    changes: [
+      {
+        type: "fix",
+        description:
+          "The Cancelled KPI no longer shows a misleading Accepted caption under the count",
+      },
+    ],
+  },
+  {
+    version: "0.8.1",
+    date: "2026-09-23",
+    releasedAt: "2026-09-23T22:15:00+08:00",
+    title: "Clearer loading and snappier document workflows",
+    highlights: [
+      "Settings opens straight to Personal Information",
+      "Actions show clearer busy feedback while they run",
+      "Document sync, import, and lists feel snappier",
+    ],
+    changes: [
+      {
+        type: "feature",
+        description:
+          "Settings opens to Personal Information right away, so you land on your profile instead of a blank pane",
+      },
+      {
+        type: "improvement",
+        description:
+          "Buttons and forms show clearer loading feedback while a request is running, so it is easier to tell when something is in progress",
+      },
+      {
+        type: "improvement",
+        description:
+          "Document sync, import, and list views feel snappier when you work through larger batches",
+      },
+    ],
+  },
+  {
+    version: "0.8.0",
+    date: "2026-09-23",
+    releasedAt: "2026-09-23T21:45:00+08:00",
+    title: "Cancel accepted invoices in the sandbox",
+    highlights: [
+      "Request cancellation on accepted invoices with a clear reason and remarks",
+      "Track cancellation progress separately from the original EIS acceptance",
+      "Refresh pending cancellations with the same Sync from EIS action used for responses",
+    ],
+    changes: [
+      {
+        type: "feature",
+        description:
+          "Admins can request cancellation on accepted invoices, choose a reason, and follow the sandbox result without losing the original acceptance record",
+      },
+      {
+        type: "feature",
+        description:
+          "Dashboard shows how many cancellations are pending and how many have been cancelled",
+      },
+      {
+        type: "improvement",
+        description:
+          "Outbound lists and detail pages show cancellation badges and a dedicated cancellation history section",
+      },
+      {
+        type: "improvement",
+        description:
+          "Audit activity records each cancellation request, submission, acceptance, and rejection for easier follow-up",
+      },
+    ],
+  },
+  {
     version: "0.7.0",
     date: "2026-08-11",
     releasedAt: "2026-08-11T09:05:00+08:00",

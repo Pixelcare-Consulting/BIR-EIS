@@ -7,6 +7,7 @@ import { sandboxErpPull } from "@/features/documents/lib/sandbox-erp-pull";
 import { writeAuditLog } from "@/lib/audit/write-audit-log";
 import { requirePermission } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/database/client";
+import { logPerfTotal, measureStage } from "@/lib/perf/measure";
 
 export type SyncErpDocumentsState = {
   error?: string;
@@ -21,30 +22,38 @@ export async function syncErpDocumentsAction(
   _prev: SyncErpDocumentsState,
   formData: FormData,
 ): Promise<SyncErpDocumentsState> {
-  const session = await requirePermission("documents.manage");
+  const perfStart = performance.now();
+
+  const session = await measureStage("auth", () =>
+    requirePermission("documents.manage"),
+  );
   const tenantId = session.user.tenantId;
   const connectionId = String(formData.get("connectionId") ?? "").trim();
 
   if (!connectionId) {
+    logPerfTotal("syncErpDocuments", perfStart);
     return { error: "Choose an ERP connection to sync." };
   }
 
-  const connection = await prisma.erpConnection.findFirst({
-    where: {
-      id: connectionId,
-      tenantId,
-      deletedAt: null,
-      enabled: true,
-    },
-    select: {
-      id: true,
-      name: true,
-      provider: true,
-      fieldMap: true,
-    },
-  });
+  const connection = await measureStage("fetch connection", () =>
+    prisma.erpConnection.findFirst({
+      where: {
+        id: connectionId,
+        tenantId,
+        deletedAt: null,
+        enabled: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        provider: true,
+        fieldMap: true,
+      },
+    }),
+  );
 
   if (!connection) {
+    logPerfTotal("syncErpDocuments", perfStart);
     return {
       error:
         "Enabled ERP connection not found. Add or enable one under Settings → Integrations.",
@@ -52,43 +61,53 @@ export async function syncErpDocumentsAction(
   }
 
   try {
-    const rows = sandboxErpPull({
-      connectionId: connection.id,
-      fieldMap: connection.fieldMap,
-    });
+    const rows = await measureStage("sandbox erp pull", async () =>
+      sandboxErpPull({
+        connectionId: connection.id,
+        fieldMap: connection.fieldMap,
+      }),
+    );
 
-    const result = await createOutboundDrafts({
-      tenantId,
-      userId: session.user.id,
-      rows,
-      source: "erp_sync",
-    });
+    const result = await measureStage("createOutboundDrafts", () =>
+      createOutboundDrafts({
+        tenantId,
+        userId: session.user.id,
+        rows,
+        source: "erp_sync",
+        sourceSystem: connection.provider,
+        sourceLabel: connection.name,
+      }),
+    );
 
-    await prisma.erpConnection.update({
-      where: { id: connection.id },
-      data: { lastSyncAt: new Date() },
-    });
+    await measureStage("db update lastSyncAt", () =>
+      prisma.erpConnection.update({
+        where: { id: connection.id },
+        data: { lastSyncAt: new Date() },
+      }),
+    );
 
-    await writeAuditLog({
-      tenantId,
-      userId: session.user.id,
-      action: "erp_connection.synced",
-      entityType: "erp_connection",
-      entityId: connection.id,
-      metadata: {
-        name: connection.name,
-        provider: connection.provider,
-        created: result.created,
-        skipped: result.skipped,
-        errorCount: result.errors.length,
-      },
-    });
+    await measureStage("audit", () =>
+      writeAuditLog({
+        tenantId,
+        userId: session.user.id,
+        action: "erp_connection.synced",
+        entityType: "erp_connection",
+        entityId: connection.id,
+        metadata: {
+          name: connection.name,
+          provider: connection.provider,
+          created: result.created,
+          skipped: result.skipped,
+          errorCount: result.errors.length,
+        },
+      }),
+    );
 
-    revalidatePath("/outbound");
-    revalidatePath("/outbound/sync");
-    revalidatePath("/dashboard");
-    revalidatePath("/settings/integrations/erp");
-    revalidatePath("/audit-log");
+    await measureStage("revalidate", async () => {
+      revalidatePath("/outbound");
+      revalidatePath("/outbound/sync");
+      revalidatePath("/settings/integrations/erp");
+    });
 
     const parts = [
       result.created === 1
@@ -103,6 +122,7 @@ export async function syncErpDocumentsAction(
       );
     }
 
+    logPerfTotal("syncErpDocuments", perfStart);
     return {
       success: true,
       created: result.created,
@@ -111,6 +131,7 @@ export async function syncErpDocumentsAction(
       message: `${parts.join(", ")}.`,
     };
   } catch {
+    logPerfTotal("syncErpDocuments", perfStart);
     return { error: "Could not sync ERP documents. Please try again." };
   }
 }

@@ -8,11 +8,12 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 
 import { DashboardNavySurface } from "@/app/(app)/dashboard/_components/dashboard-navy-surface";
 import { DEMO_SYSTEM_STATUS } from "@/app/(app)/dashboard/_data/demo-invoices";
-import { Button } from "@/components/ui/button";
+import { ActionButton } from "@/components/ui/action-button";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface BirEisSystemStatusProps {
@@ -30,15 +31,15 @@ function formatCheckedAt(date: Date): string {
 export function BirEisSystemStatus({
   registeredUsers,
 }: BirEisSystemStatusProps) {
+  const router = useRouter();
   const [checkedAt, setCheckedAt] = useState(() => new Date());
-  const [refreshing, setRefreshing] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   function handleRefresh() {
-    setRefreshing(true);
-    window.setTimeout(() => {
+    startTransition(() => {
       setCheckedAt(new Date());
-      setRefreshing(false);
-    }, 450);
+      router.refresh();
+    });
   }
 
   return (
@@ -57,20 +58,18 @@ export function BirEisSystemStatus({
               <p className="text-xs text-sidebar-muted">Real-time monitoring.</p>
             </div>
           </div>
-          <Button
+          <ActionButton
             type="button"
             size="sm"
             variant="secondary"
             className="h-8 shrink-0 gap-1.5 border border-white/25 bg-white/10 text-sidebar-foreground hover:bg-white/15 hover:text-sidebar-foreground"
             onClick={handleRefresh}
-            disabled={refreshing}
+            loading={isPending}
+            loadingText="Refreshing…"
           >
-            <RefreshCw
-              className={`size-3.5 ${refreshing ? "animate-spin" : ""}`}
-              aria-hidden
-            />
+            <RefreshCw className="size-3.5" aria-hidden />
             Refresh
-          </Button>
+          </ActionButton>
         </div>
       </DashboardNavySurface>
       <CardContent className="space-y-4 px-5 py-5">

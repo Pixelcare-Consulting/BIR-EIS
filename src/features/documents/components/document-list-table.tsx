@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 
+import { DocumentRowActions } from "@/features/documents/components/document-row-actions";
 import {
-  DocumentStatusBadge,
+  BusinessStatusBadge,
   EisAckStatusBadge,
 } from "@/features/documents/components/document-status-badge";
 import {
@@ -16,7 +17,7 @@ import {
   DOCUMENT_PAGE_SIZE,
   type DocumentDirection,
 } from "@/features/documents/lib/document-list-shared";
-import { Button } from "@/components/ui/button";
+import { formatDocumentSourceLabel } from "@/features/documents/lib/document-source-label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TablePagination } from "@/components/ui/table-pagination";
 import {
@@ -42,6 +43,11 @@ export interface DocumentListRow {
   /** Plain string amount (Prisma Decimal serialized via `.toString()`). */
   totalAmount: string | number;
   eisAckStatus?: string | null;
+  cancellationStatus?: string | null;
+  eisReferenceId?: string | null;
+  source?: string;
+  sourceSystem?: string | null;
+  sourceLabel?: string | null;
 }
 
 export interface DocumentListFiltersState {
@@ -59,6 +65,7 @@ export interface DocumentListTableProps {
   filters?: DocumentListFiltersState;
   emptyTitle: string;
   emptyDescription: string;
+  canManage?: boolean;
 }
 
 function buildListHref(
@@ -85,8 +92,10 @@ export function DocumentListTable({
   filters,
   emptyTitle,
   emptyDescription,
+  canManage = false,
 }: DocumentListTableProps) {
   const detailBase = direction === "outbound" ? "/outbound" : "/inbound";
+  const isOutbound = direction === "outbound";
   const rangeStart = total === 0 ? 0 : (page - 1) * DOCUMENT_PAGE_SIZE + 1;
   const rangeEnd = Math.min(page * DOCUMENT_PAGE_SIZE, total);
   const pageIds = documents.map((doc) => doc.id);
@@ -155,7 +164,11 @@ export function DocumentListTable({
             <TableHead>Issue date</TableHead>
             <TableHead>Amount</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>EIS response</TableHead>
+            {isOutbound ? (
+              <TableHead>Source</TableHead>
+            ) : (
+              <TableHead>EIS response</TableHead>
+            )}
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -201,18 +214,44 @@ export function DocumentListTable({
                   {formatMoney(doc.totalAmount, doc.currency)}
                 </TableCell>
                 <TableCell>
-                  <DocumentStatusBadge
-                    status={doc.status}
+                  <BusinessStatusBadge
                     direction={direction}
+                    document={{
+                      status: doc.status,
+                      cancellationStatus: doc.cancellationStatus,
+                    }}
                   />
                 </TableCell>
                 <TableCell>
-                  <EisAckStatusBadge status={doc.eisAckStatus} />
+                  {isOutbound ? (
+                    <span className="text-muted-foreground">
+                      {formatDocumentSourceLabel({
+                        source: doc.source ?? "manual",
+                        sourceSystem: doc.sourceSystem,
+                        sourceLabel: doc.sourceLabel,
+                      })}
+                    </span>
+                  ) : (
+                    <EisAckStatusBadge status={doc.eisAckStatus} />
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button asChild variant="outline" size="sm">
-                    <Link href={`${detailBase}/${doc.id}`}>View details</Link>
-                  </Button>
+                  <DocumentRowActions
+                    detailHref={`${detailBase}/${doc.id}`}
+                    canManage={canManage}
+                    document={{
+                      id: doc.id,
+                      documentNumber: doc.documentNumber,
+                      documentType: doc.documentType,
+                      counterpartName: doc.counterpartName,
+                      issueDate: doc.issueDate,
+                      currency: doc.currency,
+                      totalAmount: doc.totalAmount,
+                      status: doc.status,
+                      eisReferenceId: doc.eisReferenceId ?? null,
+                      cancellationStatus: doc.cancellationStatus,
+                    }}
+                  />
                 </TableCell>
               </TableRow>
             );

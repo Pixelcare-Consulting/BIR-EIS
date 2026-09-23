@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import {
   Building2,
   ChevronsUpDown,
   CircleHelp,
   ClipboardList,
+  Loader2,
   LogOut,
   Settings,
 } from "lucide-react";
@@ -53,12 +55,19 @@ function getInitials(name: string, email: string): string {
 export function NavUser({ user }: NavUserProps) {
   const { isMobile } = useSidebar();
   const router = useRouter();
+  const [isBusy, setIsBusy] = useState(false);
   const initials = getInitials(user.name, user.email);
 
   async function handleSignOut() {
-    await authClient.signOut();
-    router.push("/login");
-    router.refresh();
+    if (isBusy) return;
+    setIsBusy(true);
+    try {
+      await authClient.signOut();
+      router.push("/login");
+      router.refresh();
+    } catch {
+      setIsBusy(false);
+    }
   }
 
   return (
@@ -114,26 +123,26 @@ export function NavUser({ user }: NavUserProps) {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               {user.isPlatformOperator ? (
-                <DropdownMenuItem asChild>
+                <DropdownMenuItem asChild disabled={isBusy}>
                   <Link href="/provider">
                     <Building2 />
                     Provider console
                   </Link>
                 </DropdownMenuItem>
               ) : null}
-              <DropdownMenuItem asChild>
-                <Link href="/settings">
+              <DropdownMenuItem asChild disabled={isBusy}>
+                <Link href="/settings/profile">
                   <Settings />
                   Settings
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
+              <DropdownMenuItem asChild disabled={isBusy}>
                 <Link href="/#help">
                   <CircleHelp />
                   Help & Support
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
+              <DropdownMenuItem asChild disabled={isBusy}>
                 <Link href="/#requirements">
                   <ClipboardList />
                   Requirements
@@ -141,9 +150,16 @@ export function NavUser({ user }: NavUserProps) {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => void handleSignOut()}>
-              <LogOut />
-              Log out
+            <DropdownMenuItem
+              disabled={isBusy}
+              onClick={() => void handleSignOut()}
+            >
+              {isBusy ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+              ) : (
+                <LogOut />
+              )}
+              {isBusy ? "Signing out…" : "Log out"}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <div className="px-2 py-1.5 text-xs text-muted-foreground">

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Eye, EyeOff, Loader2, X } from "lucide-react";
+import { Check, Eye, EyeOff, X } from "lucide-react";
 import { useActionState, useState } from "react";
 
 import {
@@ -9,7 +9,7 @@ import {
 } from "@/features/settings/actions/change-password.action";
 import { settingsFieldClassName } from "@/features/settings/lib/field-styles";
 import { PASSWORD_RULES } from "@/features/settings/lib/password-rules";
-import { Button } from "@/components/ui/button";
+import { ActionButton } from "@/components/ui/action-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/utils/cn";
@@ -163,20 +163,14 @@ export function ChangePasswordForm() {
       ) : null}
 
       <div className="flex items-center border-t border-border/60 pt-5">
-        <Button
+        <ActionButton
           type="submit"
-          disabled={pending}
+          loading={pending}
+          loadingText="Updating…"
           className="h-10 rounded-md px-5 font-semibold shadow-sm"
         >
-          {pending ? (
-            <>
-              <Loader2 className="size-4 animate-spin" />
-              Updating…
-            </>
-          ) : (
-            "Update password"
-          )}
-        </Button>
+          Update password
+        </ActionButton>
       </div>
     </form>
   );

@@ -1,7 +1,9 @@
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
+  Ban,
   Building2,
+  Clock3,
   type LucideIcon,
 } from "lucide-react";
 
@@ -11,6 +13,8 @@ export interface DashboardKpiValues {
   outbound: number;
   inbound: number;
   companies: number;
+  cancellationPending: number;
+  cancelled: number;
 }
 
 const SUMMARY_META: {
@@ -35,6 +39,20 @@ const SUMMARY_META: {
     accentClass: "border-t-teal-500",
   },
   {
+    key: "cancellationPending",
+    label: "CANCELLATION PENDING",
+    caption: "AWAITING",
+    icon: Clock3,
+    accentClass: "border-t-amber-500",
+  },
+  {
+    key: "cancelled",
+    label: "CANCELLED",
+    caption: "TOTAL",
+    icon: Ban,
+    accentClass: "border-t-rose-500",
+  },
+  {
     key: "companies",
     label: "COMPANIES REGISTERED",
     caption: "ACTIVE",
@@ -45,7 +63,7 @@ const SUMMARY_META: {
 
 export function DashboardKpiCards({ values }: { values: DashboardKpiValues }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 xl:gap-5">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5 xl:gap-5">
       {SUMMARY_META.map((item) => {
         const Icon = item.icon;
         const raw = values[item.key];
